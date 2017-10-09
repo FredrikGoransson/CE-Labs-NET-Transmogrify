@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{26FE391D-2578-46C6-8489-5734735F1A1E}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>Ce_Labs_ProjectToNuGetSwitcher.App</RootNamespace>
+    <AssemblyName>Ce-Labs-ProjectToNuGetSwitcher.App</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="CommandLine, Version=1.9.71.2, Culture=neutral, PublicKeyToken=de6f01bd326f8c32, processorArchitecture=MSIL">
+      <HintPath>..\packages\CommandLineParser.1.9.71\lib\net45\CommandLine.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ConsoleLogger.cs" />
+    <Compile Include="FolderProjectItem.cs" />
+    <Compile Include="FolderTool.cs" />
+    <Compile Include="ILogger.cs" />
+    <Compile Include="NugetPackage.cs" />
+    <Compile Include="NugetPackageTool.cs" />
+    <Compile Include="NugetTool.cs" />
+    <Compile Include="NugetVersion.cs" />
+    <Compile Include="Nuspec.cs" />
+    <Compile Include="NuspecDependency.cs" />
+    <Compile Include="PathExtensions.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="ProjectReference.cs" />
+    <Compile Include="ProjectTool.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SolutionProjectConfiguration.cs" />
+    <Compile Include="SolutionProjectHierarchy.cs" />
+    <Compile Include="SolutionProjectItem.cs" />
+    <Compile Include="SolutionTool.cs" />
+    <Compile Include="StringMatchExtensions.cs" />
+    <Compile Include="TransmogrificationTool.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

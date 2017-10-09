@@ -1,0 +1,9 @@
+C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.exe.config
+C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.exe
+C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.pdb
+C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.csprojResolveAssemblyReference.cache
+C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.csproj.CoreCompileInputs.cache
+C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.exe
+C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.pdb
+C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\CommandLine.dll
+C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\CommandLine.xml
