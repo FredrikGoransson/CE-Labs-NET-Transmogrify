@@ -74,4 +74,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy $(ProjectDir)$(OutDir)$(TargetFileName) $(ProjectDir)$(OutDir)transmogrify.exe</PostBuildEvent>
+  </PropertyGroup>
 </Project>
