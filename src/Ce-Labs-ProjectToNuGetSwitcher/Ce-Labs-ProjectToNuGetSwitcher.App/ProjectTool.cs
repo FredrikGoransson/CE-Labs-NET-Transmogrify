@@ -12,8 +12,10 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 	{
 		private readonly Regex _parseTargetFrameworkVersion = new Regex(@"v(?<a>\d+)(?>\.(?<b>\d+)(?>\.(?<c>\d+)(?>\.(?<d>\d+)){0,1}){0,1}){0,1}", RegexOptions.Compiled);
 		private readonly string _parseTargetFrameworkReplacementString = @"net$1$2$3$4";
+		private static readonly Regex _isPackagesHintPath = new Regex(@"\\packages\\.*\\lib\\.*");	
 
 		private readonly string _projectPath;
+		private readonly ILogger _logger;
 		private readonly XDocument _document;
 		private readonly XmlNamespaceManager _namespaceManager;
 		private readonly XNamespace _msbNs;
@@ -27,10 +29,12 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 
 		public string FilePath => _projectPath;
 		public string FolderPath => System.IO.Path.GetDirectoryName(_projectPath);
+		public object Name => System.IO.Path.GetFileNameWithoutExtension(_projectPath);
 
-		public ProjectTool(string path)
+		public ProjectTool(string path, ILogger logger)
 		{
 			_projectPath = path;
+			_logger = logger;
 
 			_document = XDocument.Load(_projectPath);
 
@@ -61,19 +65,22 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			var itemGroupReferences = _document.Descendants(_msbNs + "ItemGroup")
 				.SelectMany(element => element.Elements(_msbNs + "Reference"));
 
-			//var nodes = _document.SelectNodes(@"//msbld:ItemGroup/msbld:Reference", _namespaceManager);
+			var projectTargetVersion = (_document.Descendants(_msbNs + "TargetFrameworkVersion").FirstOrDefault()?.Value ?? "v4.5.1").RemoveFromStart("v");
 
 			foreach (var element in itemGroupReferences)
 			{
 				
 				var fullName = element.Attribute("Include")?.Value;
 				var hintPath = element.Attribute("HintPath")?.Value;
-				var name = fullName.Split(',').FirstOrDefault();
+				var nameComponents = fullName.Split(',');
+				var name = nameComponents[0];
+				var version = nameComponents.Length > 1 ? nameComponents[1]?.RemoveFromStart(" Version=") : projectTargetVersion;
 				var projectReference = new ProjectReference()
 				{
 					Name = name, 
 					FullName = fullName,
 					HintPath = hintPath,
+					Version = new ReferenceVersion(version),
 				};
 
 				yield return projectReference;
@@ -406,6 +413,225 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 					_didUpdateDocument = true;
 				}
 			}
+		}
+
+
+		public void CleanUpProject()
+		{
+			if (!_isCpsDocument)
+			{
+				CleanUpClassicProject();
+			}
+			else
+			{
+				CleanUpCPSProject();
+			}
+		}
+
+		private void CleanUpCPSProject()
+		{
+
+		}
+
+		private static bool IsHintPathPackageReference(string hintPath)
+		{
+			if (hintPath == null) return false;
+			var match = _isPackagesHintPath.Match(hintPath);
+			return match.Success;
+		}
+
+		private string GetPackagesFolderPath()
+		{
+			var packagesFolderPath = (string)null;
+			var folder = _projectPath;
+			while (packagesFolderPath == null)
+			{
+				folder = System.IO.Directory.GetParent(folder)?.FullName;
+				if (folder == null) return null;
+				var packagesFolders = System.IO.Directory.GetDirectories(folder, "packages");
+				packagesFolderPath = packagesFolders.FirstOrDefault();
+			}
+			return packagesFolderPath;
+		}
+
+		private void CleanUpClassicProject()
+		{
+			var projectNode = _document.Element(_msbNs + "Project");
+			if (projectNode == null) throw new ApplicationException($"Invalid Project xml, could not find Project node");
+
+			var projectTargetVersion = (projectNode.Elements(_msbNs + "TargetFrameworkVersion").FirstOrDefault()?.Value ?? "v4.5.1").RemoveFromStart("v");
+
+			var itemGroupReferenceNodes = projectNode.Elements(_msbNs + "ItemGroup")
+				.SelectMany(element => element.Elements(_msbNs + "Reference"))
+				.ToArray();
+
+			var references = new List<ProjectReference>();// GetReferences().OrderBy(r => r).ToArray();
+			foreach (var referenceNode in itemGroupReferenceNodes)
+			{
+				var fullName = referenceNode.Attribute("Include")?.Value;
+				var hintPath = referenceNode.Element(_msbNs + "HintPath")?.Value;
+				var nameComponents = fullName.Split(',');
+				var name = nameComponents[0];
+				var version = nameComponents.Length > 1 ? nameComponents[1]?.RemoveFromStart(" Version=") : projectTargetVersion;
+				var isPrivate = referenceNode.Element(_msbNs + "Private")?.Value;
+				var isPackageReference = IsHintPathPackageReference(hintPath);
+
+				var projectReference = new ProjectReference()
+				{
+					Name = name,
+					FullName = fullName,
+					HintPath = hintPath,
+					Version = new ReferenceVersion(version),
+					Private = (isPrivate == "True"),
+					IsPackageReference = isPackageReference,
+					PackageVersion = isPackageReference ? new ReferenceVersion(hintPath) : null,
+				};
+
+				var existingReference = references.FirstOrDefault(r => r.Name == projectReference.Name);
+				if (existingReference != null)
+				{
+					var comparison = projectReference.CompareTo(existingReference);
+					if (comparison == 0)
+					{
+						// Same, ignore
+						_logger.LogMessage(
+							$"\tFound duplicate identical references of {existingReference.Name} {existingReference.Version} {existingReference.HintPath}");
+					}
+					else if (comparison > 0)
+					{
+						// Newer version, remove the existing
+						_logger.LogMessage(
+							$"\tFound duplicate references of {existingReference.Name} {existingReference.Version} {existingReference.HintPath}");
+						references.Remove(existingReference);
+						references.Add(projectReference);
+					}
+					else
+					{
+						// Newer version, dont add this
+						_logger.LogMessage(
+							$"\tFound duplicate references of {existingReference.Name} {existingReference.Version} {existingReference.HintPath}");
+					}
+				}
+				else
+				{
+					references.Add(projectReference);
+				}
+
+				if (projectReference.IsPackageReference)
+				{
+					if (projectReference.PackageVersion.CompareReleaseVersion(projectReference.Version) != 0)
+					{
+						var packagesFolder = GetPackagesFolderPath();
+						var possibleNugetPackagePaths = NugetPackageTool.FindNugetPackages(packagesFolder, projectReference.Name);
+
+						if (possibleNugetPackagePaths.All(packagePath => !hintPath.StartsWith(PathExtensions.MakeRelativePath(FolderPath, packagePath))))
+						{
+							_logger.LogMessage(
+								$"\tFound suspicious hintpath for {projectReference.Name} {projectReference.Version} {projectReference.HintPath}");
+						}
+					}
+				}
+
+				referenceNode.Remove();
+			}
+
+
+			var gacReferencesItemGroupElement = new XElement(_msbNs + "ItemGroup");
+			XElement insertAfterElement = null;
+			insertAfterElement = projectNode.Elements(_msbNs + "PropertyGroup").LastOrDefault();
+
+			if (insertAfterElement == null)
+			{
+				projectNode.Add(gacReferencesItemGroupElement);
+			}
+			else
+			{
+				insertAfterElement.AddAfterSelf(gacReferencesItemGroupElement);
+			}
+
+			references.Sort((a, b) => a.CompareTo(b));
+
+			foreach (var reference in references.Where(r => r.HintPath == null))
+			{
+				var children = new List<object>() { new XAttribute("Include", reference.FullName) };
+				if (reference.HintPath != null) { children.Add(new XElement(_msbNs + "HintPath", reference.HintPath)); }
+				if (reference.Private) { children.Add(new XElement(_msbNs + "Private", "True")); }
+				var projectReferenceXElement = new XElement(_msbNs + "Reference", children);
+				gacReferencesItemGroupElement.Add(projectReferenceXElement);
+			}
+
+			insertAfterElement = gacReferencesItemGroupElement;
+
+
+			var referencesItemGroupElement = new XElement(_msbNs + "ItemGroup");
+			insertAfterElement.AddAfterSelf(referencesItemGroupElement);
+
+			references.Sort((a, b) => a.CompareTo(b));
+
+			foreach (var reference in references.Where(r => r.HintPath != null))
+			{
+				var children = new List<object>() {new XAttribute("Include", reference.FullName)};
+				if (reference.HintPath != null) { children.Add(new XElement(_msbNs + "HintPath", reference.HintPath)); }
+				if (reference.Private) { children.Add(new XElement(_msbNs + "Private", "True")); }
+				var projectReferenceXElement = new XElement(_msbNs + "Reference", children );
+				referencesItemGroupElement.Add(projectReferenceXElement);
+			}
+
+
+
+			// Sort ProjectReferences
+			var projectReferenceChildNodes = projectNode.Elements(_msbNs + "ItemGroup").Elements()
+				.Where(element => element.Name.LocalName == "ProjectReference")
+				.Select(element => new { Element = element, File = element.Attribute("Include")?.Value })
+				.Where(element => element.File != null)
+				.ToArray();
+
+			foreach (var itemGroupChildNode in projectReferenceChildNodes)
+			{
+				itemGroupChildNode.Element.Remove();
+			}
+
+			var projectReferenceItemGroupElement = new XElement(_msbNs + "ItemGroup");
+			referencesItemGroupElement.AddBeforeSelf(projectReferenceItemGroupElement);
+
+			foreach (var itemGroupChildNode in projectReferenceChildNodes.OrderBy(element => element.File))
+			{
+				projectReferenceItemGroupElement.Add(itemGroupChildNode.Element);
+			}
+
+
+
+			// Sort Includes
+			var itemGroupChildNodes = projectNode.Elements(_msbNs + "ItemGroup").Elements()
+				.Where(element => (element.Name.LocalName != "Reference") && (element.Name.LocalName != "ProjectReference"))
+				.Select(element => new { Element = element, File = element.Attribute("Include")?.Value})
+				.Where(element => element.File != null)
+				.ToArray();
+
+			foreach (var itemGroupChildNode in itemGroupChildNodes)
+			{
+				itemGroupChildNode.Element.Remove();
+			}
+
+			var includesItemGroupElement = new XElement(_msbNs + "ItemGroup");
+			referencesItemGroupElement.AddAfterSelf(includesItemGroupElement);
+
+			foreach (var itemGroupChildNode in itemGroupChildNodes.OrderBy(element => element.File))
+			{
+				includesItemGroupElement.Add(itemGroupChildNode.Element);
+			}
+
+
+			// Remove empty ItemGroup nodes
+			var itemGroupNodes = _document.Descendants(_msbNs + "ItemGroup").ToArray();
+			foreach (var itemGroupNode in itemGroupNodes)
+			{
+				if (!itemGroupNode.HasElements)
+				{
+					itemGroupNode.Remove();
+				}
+			}
+			_didUpdateDocument = true;
 		}
 	}
 }

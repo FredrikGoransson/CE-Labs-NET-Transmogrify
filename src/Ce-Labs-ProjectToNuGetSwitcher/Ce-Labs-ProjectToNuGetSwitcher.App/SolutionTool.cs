@@ -430,5 +430,32 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 
 			RemoveProjectRelationships(projectItem);
 		}
+
+		public void CleanUpAllProjects()
+		{
+			var projects = GetProjects();
+
+			foreach (var project in projects)
+			{
+				
+			}
+
+
+		}
+
+		public void CleanUpProject(SolutionProjectItem project)
+		{
+			
+		}
+
+		private void CleanUpCPSProject(SolutionProjectItem project)
+		{
+			
+		}
+
+		private void CleanUpClassicProject(SolutionProjectItem project)
+		{
+			
+		}
 	}
 }

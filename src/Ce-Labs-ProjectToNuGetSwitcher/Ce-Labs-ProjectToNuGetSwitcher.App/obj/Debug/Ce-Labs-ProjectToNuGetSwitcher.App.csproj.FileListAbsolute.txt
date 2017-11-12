@@ -7,3 +7,12 @@ C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\C
 C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.pdb
 C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\CommandLine.dll
 C:\Code\Labs\Ce-Labs-ProjectToNuGetSwitcher\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\CommandLine.xml
+C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.exe.config
+C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.exe
+C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.pdb
+C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\CommandLine.dll
+C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\CommandLine.xml
+C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.csprojResolveAssemblyReference.cache
+C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.csproj.CoreCompileInputs.cache
+C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.exe
+C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.pdb

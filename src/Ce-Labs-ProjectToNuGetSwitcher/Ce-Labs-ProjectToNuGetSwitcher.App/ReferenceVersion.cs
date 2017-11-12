@@ -4,16 +4,16 @@ using System.Text.RegularExpressions;
 
 namespace Ce_Labs_ProjectToNuGetSwitcher.App
 {
-	public class NugetVersion : IComparable
+	public class ReferenceVersion : IComparable
 	{
 		private readonly string _versionString;
 
-		private static readonly Regex _parseNugetVersionRegex =
-			new Regex(@"(\.|\b)(?<major>\d+)(?>\.(?<minor>\d+)){0,1}(?>\.(?<rev>\d+)){0,1}(?>\.(?<build>\d+)){0,1}(?>\-(?<prerelease>.+)){0,1}", RegexOptions.Compiled);
-		public NugetVersion(string versionString)
+		private static readonly Regex ParseNugetVersionRegex =
+			new Regex(@"(\.|^)(?<major>\d+)(?>\.(?<minor>\d+)){0,1}(?>\.(?<rev>\d+)){0,1}(?>\.(?<build>\d+)){0,1}(?>\-(?<prerelease>[^\\]+)){0,1}", RegexOptions.Compiled);
+		public ReferenceVersion(string versionString)
 		{
 			_versionString = versionString;
-			var match = _parseNugetVersionRegex.Match(versionString);
+			var match = ParseNugetVersionRegex.Match(versionString);
 			if (!match.Success)
 			{
 				return;
@@ -51,9 +51,9 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 		public string Prerelease { get; set; }
 		public int CompareTo(object obj)
 		{
-			if (obj is NugetVersion)
+			if (obj is ReferenceVersion)
 			{
-				var b = (NugetVersion)obj;
+				var b = (ReferenceVersion)obj;
 
 				var major = Major.CompareTo(b.Major);
 				if (major != 0) return major;
@@ -64,13 +64,26 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				var revision = (Revision ?? 0).CompareTo((b.Revision ?? 0));
 				if (revision != 0) return revision;
 
-				var build = (Build ?? 0).CompareTo((b.Revision ?? 0));
+				var build = (Build ?? 0).CompareTo((b.Build ?? 0));
 				if (build != 0) return build;
 
-				var prerelease = string.Compare(Prerelease, b.Prerelease, StringComparison.Ordinal);
+				var prerelease = string.Compare(Prerelease, b.Prerelease, StringComparison.InvariantCultureIgnoreCase);
 				if (prerelease != 0) return prerelease;
 
 			}
+			return 0;
+		}
+
+		public int CompareReleaseVersion(ReferenceVersion obj)
+		{
+			var b = (ReferenceVersion)obj;
+
+			var major = Major.CompareTo(b.Major);
+			if (major != 0) return major;
+
+			var minor = (Minor ?? 0).CompareTo((b.Minor ?? 0));
+			if (minor != 0) return minor;	
+
 			return 0;
 		}
 
@@ -96,7 +109,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 					}
 				}
 			}
-			if (Prerelease != null)
+			if (!string.IsNullOrEmpty(Prerelease))
 			{
 				builder.Append("-");
 				builder.Append(Prerelease);

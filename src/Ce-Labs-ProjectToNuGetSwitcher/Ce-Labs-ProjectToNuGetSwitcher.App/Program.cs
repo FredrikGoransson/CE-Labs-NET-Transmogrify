@@ -22,7 +22,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 		public string SolutionFile { get; set; }
 
 		[Option('o', "operation", DefaultValue = "proj",
-			HelpText = "Operation to perform, o=proj replaces nugets with projects, o=nuget replaces projects with nugets")]
+			HelpText = "Operation to perform, o=proj replaces nugets with projects, o=nuget replaces projects with nugets, o=cleanup cleans up project reference in all projects")]
 		public string Operation { get; set; }
 
 		[Option('w', "wait", DefaultValue = true,
@@ -131,6 +131,14 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				Exit();
 				return;
 			}
+			else if (parsedOptions.Operation.Equals("cleanup", StringComparison.InvariantCultureIgnoreCase))
+			{
+				LogMessage($"(╯°□°）╯︵ ┻━┻  all project references");
+				var cleanupTool = new CleanupTool(new ConsoleLogger(_verbose));
+				cleanupTool.CleanUpReferencesInProjectFile(solutionTool);				
+				Exit();
+				return;
+			}
 
 			Exit($"Operation {parsedOptions.Operation} is not supported, o=proj replaces nugets with projects, o=nuget replaces projects with nugets");
 			return;
@@ -158,7 +166,8 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 
 		private static void ExamineTransmogrificationCandidates(TransmogrificationTool transmogrificationTool, SolutionTool solutionTool,  FolderTool folderTool)
 		{
-			var matchingTargets = TransmogrificationTool.GetMatchingTargets(solutionTool, folderTool);			
+			var logger = new ConsoleLogger(_verbose);
+			var matchingTargets = TransmogrificationTool.GetMatchingTargets(solutionTool, folderTool, logger);
 
 			foreach (var matchingProject in matchingTargets)
 			{
@@ -215,6 +224,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 
 		private static void PrintProjectsWithReferencesThatCouldBeChanged(SolutionTool solutionTool, IEnumerable<SolutionProjectItem> projects, string indent = "")
 		{
+			var logger = new ConsoleLogger(_verbose);
 			var projectsLookup = projects.Where(p => solutionTool.CompilableProjects.Contains(p.Type)).ToDictionary(p => p.Name, p => p);
 			foreach (var project in projects)
 			{
@@ -224,7 +234,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				{
 					var projectPath = PathExtensions.GetAbsolutePath(solutionTool.FolderPath, project.Path);
 
-					var projectTool = new ProjectTool(projectPath);
+					var projectTool = new ProjectTool(projectPath, logger);
 					foreach (var reference in projectTool.GetReferences())
 					{
 						if (projectsLookup.ContainsKey(reference.Name))

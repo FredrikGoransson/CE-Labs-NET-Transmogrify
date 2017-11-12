@@ -47,6 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CleanupTool.cs" />
     <Compile Include="ConsoleLogger.cs" />
     <Compile Include="FolderProjectItem.cs" />
     <Compile Include="FolderTool.cs" />
@@ -54,7 +55,7 @@
     <Compile Include="NugetPackage.cs" />
     <Compile Include="NugetPackageTool.cs" />
     <Compile Include="NugetTool.cs" />
-    <Compile Include="NugetVersion.cs" />
+    <Compile Include="ReferenceVersion.cs" />
     <Compile Include="Nuspec.cs" />
     <Compile Include="NuspecDependency.cs" />
     <Compile Include="PathExtensions.cs" />

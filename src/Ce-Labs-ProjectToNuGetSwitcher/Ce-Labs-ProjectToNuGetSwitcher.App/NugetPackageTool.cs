@@ -16,7 +16,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 		private readonly string _packageTargetFramework;
 		private readonly string _packageFolderPath;
 		private readonly string _packagePath;
-		private readonly NugetVersion _version;
+		private readonly ReferenceVersion _version;
 
 		private readonly string _packageLibPath;
 
@@ -27,7 +27,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			_packagesFolder = System.IO.Path.Combine(solutionFolder, "packages");
 			_packageName = packageName;
 			_packageVersion = packageVersion;
-			_version = new NugetVersion(_packageVersion);
+			_version = new ReferenceVersion(_packageVersion);
 			_packageTargetFramework = packageTargetFramework;
 
 			var packageFolderName = $"{_packageName}.{_packageVersion}";
@@ -44,7 +44,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			
 			var directories = System.IO.Directory.GetDirectories(packagesFolder, $"{packageName}*");
 
-			var latestVersionFolder = directories.Select(versionFolder => new NugetVersion(System.IO.Path.GetFileName(versionFolder))).OrderByDescending(v => v).FirstOrDefault();
+			var latestVersionFolder = directories.Select(versionFolder => new ReferenceVersion(System.IO.Path.GetFileName(versionFolder))).OrderByDescending(v => v).FirstOrDefault();
 
 			if (latestVersionFolder != null)
 			{
@@ -52,6 +52,13 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			}
 
 			return null;
+		}
+
+		public static string[] FindNugetPackages(string packagesFolder, string packageName)
+		{
+			if( packagesFolder == null) return new string[0];
+			var directories = System.IO.Directory.GetDirectories(packagesFolder, $"{packageName}*");
+			return directories;
 		}
 
 		public Nuspec GetNuspec()

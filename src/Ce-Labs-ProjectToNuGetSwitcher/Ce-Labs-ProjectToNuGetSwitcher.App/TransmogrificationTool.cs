@@ -13,7 +13,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			_logger = logger;
 		}
 
-		public static IEnumerable<FolderProjectItem> GetMatchingTargets(SolutionTool solutionTool, FolderTool folderTool)
+		public static IEnumerable<FolderProjectItem> GetMatchingTargets(SolutionTool solutionTool, FolderTool folderTool, ILogger logger)
 		{
 			var matchingTargets = new List<FolderProjectItem>();
 			var projects = solutionTool.GetProjectsWithParents().ToArray();
@@ -25,7 +25,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				{
 					var projectPath = PathExtensions.GetAbsolutePath(solutionTool.FolderPath, project.Path);
 
-					var projectTool = new ProjectTool(projectPath);
+					var projectTool = new ProjectTool(projectPath, logger);
 					foreach (var reference in projectTool.GetReferences())
 					{
 						if (targetProjectsLookup.ContainsKey(reference.Name))
@@ -61,7 +61,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 
 		private void UpdateSolutionWithFolderTargets(SolutionTool solutionTool, FolderTool folderTool)
 		{
-			var matchingTargets = GetMatchingTargets(solutionTool, folderTool);
+			var matchingTargets = GetMatchingTargets(solutionTool, folderTool, _logger);
 
 			var relativePath = folderTool.FolderPath.RemoveCommonPrefix(solutionTool.FolderPath, System.IO.Path.DirectorySeparatorChar, StringComparison.InvariantCultureIgnoreCase);
 
@@ -93,7 +93,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				{
 					var projectPath = PathExtensions.GetAbsolutePath(solutionTool.FolderPath, project.Path);
 
-					var projectTool = new ProjectTool(projectPath);
+					var projectTool = new ProjectTool(projectPath, _logger);
 
 					if (projectTool.IsCpsDocument)
 					{
@@ -224,7 +224,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			foreach (var dependentProject in dependentProjects)
 			{
 				var projectPath = System.IO.Path.Combine(solutionTool.FolderPath, dependentProject.Path);
-				var projectTool = new ProjectTool(projectPath);
+				var projectTool = new ProjectTool(projectPath, _logger);
 
 				var projectReferences = projectTool.GetProjectReferences().ToArray();
 				var packageReferences = projectTool.GetPackageReferences().ToArray();
@@ -236,7 +236,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				foreach (var projectReference in projectReferencesToRemove)
 				{
 					var projectReferencePath = PathExtensions.GetAbsolutePath(projectTool.FolderPath, projectReference.HintPath);
-					var projectReferenceTool = new ProjectTool(projectReferencePath);
+					var projectReferenceTool = new ProjectTool(projectReferencePath, _logger);
 
 					var targetFramework = projectReferenceTool.GetTargetFramework();
 					var nugetPackageTool = NugetPackageTool.GetNugetPackageTool(solutionTool.FolderPath, projectReference.Name, targetFramework);
