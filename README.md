@@ -73,6 +73,16 @@ All ItemGroup children are sorted by first Name of the reference/file, then vers
 | v, verbose | outputs verbose information |
 | w, wait | waits for input after finished operation |
 
+## Transmogri-Sort as a VisualStudio command
+By adding Transmogrify as an external tool to Visual Studio you can easily transmogri-sort your projects anytime.
+
+* Go to Tools > External Tools...
+* Click Add
+* Enter title "Transmogri-Sort™"
+Command: [path to downloaded tool, e.g. c:/tools/transmogrify]/transmogrify.exe
+Arguments: -s $(SolutionDir)$(SolutionFileName) -f -o cleanup -v
+Initial Directory: $(ProjectDir)
+
 ## Definition of transmogrify
 _transmogrified; transmogrifying_
 
