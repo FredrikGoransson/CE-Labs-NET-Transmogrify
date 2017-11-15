@@ -291,3 +291,4 @@ __pycache__/
 **/bin
 **/obj
 **/.vs
+**/packages/
