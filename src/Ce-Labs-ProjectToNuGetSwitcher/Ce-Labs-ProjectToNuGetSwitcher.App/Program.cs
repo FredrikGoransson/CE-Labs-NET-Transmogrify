@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using CommandLine;
 
@@ -34,6 +35,21 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 		public bool Debug { get; set; }
 	}
 
+	[Serializable]
+	public class ExitException : Exception
+	{
+		public bool WaitForExit { get; } = false;
+
+		public ExitException()
+		{
+		}
+
+		public ExitException(string message, bool waitForExit) : base(message)
+		{
+			WaitForExit = waitForExit;
+		}
+	}
+
 	class Program
 	{
 		private static bool _verbose = false;
@@ -60,7 +76,29 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			}
 		}
 
+
+
 		static void Main(string[] args)
+		{
+			try
+			{
+				Runner(args);
+			}
+			catch (ExitException ex)
+			{
+				LogMessage(ex.Message);
+				if (ex.WaitForExit)
+				{
+					Console.Read();
+				}
+			}
+			catch (Exception ex)
+			{
+				LogMessage(ex.Message);
+			}
+		}
+
+		private static void Runner(string [] args)
 		{
 			if (args == null || args.Length == 0)
 			{
@@ -79,7 +117,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				{
 					Console.WriteLine(arg);
 				}
-				Console.ReadKey();
+				Console.Read();
 			}
 
 			_verbose = parsedOptions.Verbose;
@@ -90,46 +128,32 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			if (solutionName == null)
 			{
 				Exit($"Enter the path to a solution file, s=c:\\code\\mysolution.sln");
-				return;
 			}
 			if (!System.IO.File.Exists(solutionName))
 			{
 				Exit($"Solution file {solutionName} does not exist");
-				return;
 			}
 
 			var solutionTool = new SolutionTool(solutionName);
-			var folderPath = parsedOptions.Folder;
-			if (folderPath == null)
-			{
-				Exit($"Enter the path to a folder with projects in, f=\"c:\\code\\projects\"");
-				return;
-			}
-			if (!System.IO.Directory.Exists(folderPath))
-			{
-				Exit($"Folder {folderPath} that should contain projects, does not exist, f=\"c:\\code\\projects\"");
-				return;
-			}
-
 			if (parsedOptions.Operation.Equals("proj", StringComparison.InvariantCultureIgnoreCase))
 			{
 				LogMessage($"Transmogrifying NuGet references to project references");
 
+				var folderPath = parsedOptions.Folder;
 				var folderTool = new FolderTool(folderPath);
 				var transmogrificationTool = new TransmogrificationTool(new ConsoleLogger(_verbose));
 				transmogrificationTool.TransmogrifyNugetPackagesToProjects(solutionTool, folderTool);
 				Exit();
-				return;
 			}
 			else if (parsedOptions.Operation.Equals("nuget", StringComparison.InvariantCultureIgnoreCase))
 			{
 				LogMessage($"Transmogrifying project references to NuGet references");
 
+				var folderPath = parsedOptions.Folder;
 				var folderTool = new FolderTool(folderPath);
 				var transmogrificationTool = new TransmogrificationTool(new ConsoleLogger(_verbose));
 				transmogrificationTool.ReTransmogrifyProjectsToNugetPackages(solutionTool, folderTool);
 				Exit();
-				return;
 			}
 			else if (parsedOptions.Operation.Equals("cleanup", StringComparison.InvariantCultureIgnoreCase))
 			{
@@ -137,20 +161,26 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				var cleanupTool = new CleanupTool(new ConsoleLogger(_verbose));
 				cleanupTool.CleanUpReferencesInProjectFile(solutionTool);				
 				Exit();
-				return;
 			}
 
 			Exit($"Operation {parsedOptions.Operation} is not supported, o=proj replaces nugets with projects, o=nuget replaces projects with nugets");
-			return;
+		}
+
+		private static void CheckFolder(string folderPath)
+		{
+			if (folderPath == null)
+			{
+				Exit($"Enter the path to a folder with projects in, f=\"c:\\code\\projects\"");
+			}
+			if (!System.IO.Directory.Exists(folderPath))
+			{
+				Exit($"Folder {folderPath} that should contain projects, does not exist, f=\"c:\\code\\projects\"");
+			}
 		}
 
 		private static void Exit(string message = @"Done")
 		{
-			LogMessage(message);
-			if (_waitForExit)
-			{
-				Console.ReadKey();
-			}
+			throw new ExitException(message, _waitForExit);
 		}
 
 		private static void PrintPossibleTargets(SolutionTool solutionTool, FolderTool folderTool)

@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -26,6 +29,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 		public bool IsCpsDocument => _isCpsDocument;
 
 		private bool _didUpdateDocument = false;
+		private string _originalHash;
 
 		public string FilePath => _projectPath;
 		public string FolderPath => System.IO.Path.GetDirectoryName(_projectPath);
@@ -37,6 +41,25 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			_logger = logger;
 
 			_document = XDocument.Load(_projectPath);
+
+			var xws = new XmlWriterSettings
+			{
+				OmitXmlDeclaration = _isCpsDocument,
+				Indent = true
+			};
+			using (var stream = new MemoryStream())
+			{
+				using (var writer = XmlWriter.Create(stream, xws))
+				{
+					_document.Save(writer);
+				}
+				stream.Position = 0;
+				using (var sha = SHA256.Create())
+				{
+					var computedHash = sha.ComputeHash(stream);
+					_originalHash = Encoding.UTF8.GetString(computedHash);
+				}
+			}
 
 			var sdkValue = (_document.FirstNode as XElement)?.Attribute("Sdk")?.Value;
 			_isCpsDocument = (sdkValue != null);
@@ -134,6 +157,24 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				OmitXmlDeclaration = _isCpsDocument,
 				Indent = true
 			};
+
+			using (var stream = new MemoryStream())
+			{
+				using (var writer = XmlWriter.Create(stream, xws))
+				{
+					_document.Save(writer);
+				}
+				stream.Position = 0;
+				using (var sha = SHA256.Create())
+				{
+					var computedHash = sha.ComputeHash(stream);
+					var newHash = Encoding.UTF8.GetString(computedHash);
+
+					if( newHash == _originalHash) return;					
+				}
+			}
+
+			
 			using (var writer = XmlWriter.Create(_projectPath, xws))
 			{
 				_document.Save(writer);
@@ -594,9 +635,14 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			var projectReferenceItemGroupElement = new XElement(_msbNs + "ItemGroup");
 			referencesItemGroupElement.AddBeforeSelf(projectReferenceItemGroupElement);
 
+			var lastItemFile = "";
 			foreach (var itemGroupChildNode in projectReferenceChildNodes.OrderBy(element => element.File))
 			{
-				projectReferenceItemGroupElement.Add(itemGroupChildNode.Element);
+				if (lastItemFile != itemGroupChildNode.File)
+				{
+					projectReferenceItemGroupElement.Add(itemGroupChildNode.Element);
+				}
+				lastItemFile = itemGroupChildNode.File;
 			}
 
 
