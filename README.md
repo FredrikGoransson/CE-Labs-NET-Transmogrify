@@ -3,7 +3,9 @@ Transmogrifies NuGet references to project references, and back
 
 If you have the source for assemblies that you have added to your solution as NuGet-packages, Transmogrify allows you to temporarily replace those NuGet-packaged referencs with actual in-solution project references instead. This is obviously for debugging an development purposes. When you are done with debugging/development you can transmogrify back from project references to NuGet-package references instead.
 
-Works with both .NET Framework and .NET Core (CPS) projects
+Works with both .NET Framework and .NET Core (CPS) projects.
+
+Transmogrify also comes with a nifty extra feature that, contrary to transmogrification for debugging purposes, is actually very useful for development purposes - it cleans up project files by sorting the content in them. Why is this useful? Well, by always keeping the same order for things in the project file, merges and diffs becomes much easier to understand. By running Transmogri-Sort™ before any commit, the order (or struktur in Swedish) of ItemGroups and children will always be the same, no mather Visual Studio or ReSharpers sloppy changes to your project.
 
 ## Usage
 Simply run ```transmogrify.exe``` and specify the soltion to transmogrify together with a folder containing projects that you want to replace with (or back from).
@@ -50,6 +52,16 @@ To *Transmogrify* (back) to NuGet-package references from Project references the
 
 Usage: ```transmogrify.exe -s c:\code\mysolution\mysolution.sln -f c:\code\libs\ServiceFabric\ -o nuget```
 
+### Transmogri-Sort™ project contents
+This will update your projects to contain at most 5 ItemGroup elements, always in the same order.
+* All GAC-references, i.e. any assembly reference without a HintPath
+* All project references to projects within the same solution
+* All dll/exe references with a HintPath, including NuGet package references
+* All file includes/removes
+* Other ItemGroups, if any such exists, they will be left as-is at the end
+
+All ItemGroup children are sorted by first Name of the reference/file, then version of the reference and third the package version, including prerelease information if it is a NuGet-package reference (i.e. the HintPath points to somewhere under ```..\packages\``` 
+
 ## Command
 ```transmogrify.exe -s (solution file) -f (mix-in folder) -o (proj|nuget) [-v] [-w]``` switches:
 
@@ -57,9 +69,19 @@ Usage: ```transmogrify.exe -s c:\code\mysolution\mysolution.sln -f c:\code\libs\
 | :---|:---|
 | s, solution  | path to the solution file |
 | f, folder | path to the mix-in folder |
-| o, operation | "proj" to change NuGets to project treferences, "nuget" to change projects to NuGets |
+| o, operation | "proj" to change NuGets to project treferences, "nuget" to change projects to NuGets, "cleanup" to run Transmogri-Sort™ |
 | v, verbose | outputs verbose information |
 | w, wait | waits for input after finished operation |
+
+## Transmogri-Sort as a VisualStudio command
+By adding Transmogrify as an external tool to Visual Studio you can easily transmogri-sort your projects anytime.
+
+* Go to Tools > External Tools...
+* Click Add
+* Enter title "Transmogri-Sort™"
+Command: [path to downloaded tool, e.g. c:/tools/transmogrify]/transmogrify.exe
+Arguments: -s $(SolutionDir)$(SolutionFileName) -f -o cleanup -v
+Initial Directory: $(ProjectDir)
 
 ## Definition of transmogrify
 _transmogrified; transmogrifying_
