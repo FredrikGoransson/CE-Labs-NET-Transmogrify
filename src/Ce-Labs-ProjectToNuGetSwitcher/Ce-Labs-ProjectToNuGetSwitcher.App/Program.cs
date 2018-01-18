@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using Ce.Labs.BuildTools;
 using CommandLine;
 
 namespace Ce_Labs_ProjectToNuGetSwitcher.App
@@ -160,6 +161,27 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				LogMessage($"(╯°□°）╯︵ ┻━┻  all project references");
 				var cleanupTool = new CleanupTool(new ConsoleLogger(_verbose));
 				cleanupTool.CleanUpReferencesInProjectFile(solutionTool);				
+				Exit();
+			}
+			else if (parsedOptions.Operation.Equals("scan", StringComparison.InvariantCultureIgnoreCase))
+			{
+				LogMessage($"Inspect all project references");
+				var cleanupTool = new CleanupTool(new ConsoleLogger(_verbose));
+				cleanupTool.ScanAllReferencesInProjectFiles(solutionTool);
+				Exit();
+			}
+			else if (parsedOptions.Operation.Equals("scanfiles", StringComparison.InvariantCultureIgnoreCase))
+			{
+				LogMessage($"Scan files not included in projects");
+				var cleanupTool = new CleanupTool(new ConsoleLogger(_verbose));
+				cleanupTool.ScanAllFilesInProjectFolders(solutionTool);
+				Exit();
+			}
+			else if (parsedOptions.Operation.Equals("cleanfiles", StringComparison.InvariantCultureIgnoreCase))
+			{
+				LogMessage($"Clean up files not included in projects");
+				var cleanupTool = new CleanupTool(new ConsoleLogger(_verbose));
+				cleanupTool.RemoveFilesNotIncludedInProjects(solutionTool);
 				Exit();
 			}
 

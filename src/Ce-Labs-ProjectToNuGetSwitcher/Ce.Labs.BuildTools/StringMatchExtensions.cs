@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Ce_Labs_ProjectToNuGetSwitcher.App
+namespace Ce.Labs.BuildTools
 {
 	public static class StringMatchExtensions
 	{

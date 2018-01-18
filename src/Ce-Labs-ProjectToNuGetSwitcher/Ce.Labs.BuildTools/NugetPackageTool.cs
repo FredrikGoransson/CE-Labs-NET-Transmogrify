@@ -3,7 +3,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
-namespace Ce_Labs_ProjectToNuGetSwitcher.App
+namespace Ce.Labs.BuildTools
 {
 	public class NugetPackageTool
 	{
@@ -69,8 +69,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				var zipArchiveEntry = zipArchive.GetEntry(nuspecFileName);
 
 				var nuspecFileStream = zipArchiveEntry.Open();
-				string nuspecContents = null;
-				XDocument document = null;
+			    XDocument document = null;
 				document = XDocument.Load(nuspecFileStream);
 
 				var nsNs = XNamespace.Get("http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd");

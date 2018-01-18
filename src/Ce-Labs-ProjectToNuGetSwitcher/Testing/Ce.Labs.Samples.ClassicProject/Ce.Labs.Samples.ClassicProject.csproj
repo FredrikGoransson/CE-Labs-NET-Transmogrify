@@ -4,41 +4,34 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{26FE391D-2578-46C6-8489-5734735F1A1E}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>Ce_Labs_ProjectToNuGetSwitcher.App</RootNamespace>
-    <AssemblyName>Ce-Labs-ProjectToNuGetSwitcher.App</AssemblyName>
+    <ProjectGuid>{8976B123-80BD-459A-BB2B-46DE19140EA2}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Ce.Labs.Samples</RootNamespace>
+    <AssemblyName>Ce.Labs.Samples.ClassicProject</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>bin\Debug\special_bin\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>bin\Release\special_releaseBin</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="CommandLine, Version=1.9.71.2, Culture=neutral, PublicKeyToken=de6f01bd326f8c32, processorArchitecture=MSIL">
-      <HintPath>..\packages\CommandLineParser.1.9.71\lib\net45\CommandLine.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -47,22 +40,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConsoleLogger.cs" />
-    <Compile Include="Program.cs" />
+    <Compile Include="SampleClass5IncludedInprojectDependentOnClass4.cs">
+      <DependentUpon>SampleClass4IncludedInprojectWithProperties.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SampleClass4IncludedInprojectWithProperties.cs">
+      <Property1>sample</Property1>
+      <Property2>class4</Property2>
+    </Compile>
+    <Compile Include="SubFolder\SampleClass2IncludedInproject.cs" />
+    <Compile Include="SampleClass1IncludedInproject.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Ce.Labs.BuildTools\Ce.Labs.BuildTools.csproj">
-      <Project>{A5A93525-C286-4561-B0F1-56C57372B1A9}</Project>
-      <Name>Ce.Labs.BuildTools</Name>
-    </ProjectReference>
+    <None Include="configurationFile.config" />
+    <None Include="includedFile.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>copy $(ProjectDir)$(OutDir)$(TargetFileName) $(ProjectDir)$(OutDir)transmogrify.exe</PostBuildEvent>
-  </PropertyGroup>
 </Project>

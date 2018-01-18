@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Ce_Labs_ProjectToNuGetSwitcher.App
+namespace Ce.Labs.BuildTools
 {
 	public class SolutionTool
 	{
@@ -429,33 +429,6 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			RemoveProjectConfiguration(projectItem);
 
 			RemoveProjectRelationships(projectItem);
-		}
-
-		public void CleanUpAllProjects()
-		{
-			var projects = GetProjects();
-
-			foreach (var project in projects)
-			{
-				
-			}
-
-
-		}
-
-		public void CleanUpProject(SolutionProjectItem project)
-		{
-			
-		}
-
-		private void CleanUpCPSProject(SolutionProjectItem project)
-		{
-			
-		}
-
-		private void CleanUpClassicProject(SolutionProjectItem project)
-		{
-			
 		}
 	}
 }

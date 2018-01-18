@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net461</TargetFramework>
+		<RuntimeIdentifier>win7-x64</RuntimeIdentifier>
+		<SkipValidatePackageReferences>true</SkipValidatePackageReferences>
+		<Platforms>AnyCPU;x64</Platforms>
+		<Company>Code Effect</Company>
+		<OutputType>Library</OutputType>
+		<Authors>Code Effect</Authors>
+		<Product>CE Labs</Product>
+		<Description>Tooling for working with Visual Studio solutions and .NET projects</Description>
+	</PropertyGroup>
+	<ItemGroup>
+	  <Reference Include="System.IO.Compression" />
+	</ItemGroup>
+</Project>

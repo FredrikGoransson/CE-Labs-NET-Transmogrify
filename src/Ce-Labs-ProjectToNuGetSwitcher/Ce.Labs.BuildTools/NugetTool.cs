@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Xml.Linq;
 
-namespace Ce_Labs_ProjectToNuGetSwitcher.App
+namespace Ce.Labs.BuildTools
 {
 	public class NugetTool
 	{

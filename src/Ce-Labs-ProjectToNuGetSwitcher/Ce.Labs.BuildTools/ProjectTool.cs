@@ -9,13 +9,16 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 
-namespace Ce_Labs_ProjectToNuGetSwitcher.App
+namespace Ce.Labs.BuildTools
 {
 	public class ProjectTool
 	{
 		private readonly Regex _parseTargetFrameworkVersion = new Regex(@"v(?<a>\d+)(?>\.(?<b>\d+)(?>\.(?<c>\d+)(?>\.(?<d>\d+)){0,1}){0,1}){0,1}", RegexOptions.Compiled);
 		private readonly string _parseTargetFrameworkReplacementString = @"net$1$2$3$4";
-		private static readonly Regex _isPackagesHintPath = new Regex(@"\\packages\\.*\\lib\\.*");	
+		private static readonly Regex _isPackagesHintPath = new Regex(@"\\packages\\.*\\lib\\.*");
+		private static readonly Regex _packageNameFromHintPath = new Regex(@"\\packages\\(?<package>[^\\]*)");
+        private readonly Regex _parseProjectCondition = new Regex(@"\'(?<left>[^']*)\'\s*(?<operator>==|!=)\s*\'(?<right>[^']*)\'", RegexOptions.Compiled);
+	    private readonly Regex _replaceProjectVarablesInCondition = new Regex(@"(!?\$\((?<varable>[^\)]*)\))", RegexOptions.Compiled);
 
 		private readonly string _projectPath;
 		private readonly ILogger _logger;
@@ -33,7 +36,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 
 		public string FilePath => _projectPath;
 		public string FolderPath => System.IO.Path.GetDirectoryName(_projectPath);
-		public object Name => System.IO.Path.GetFileNameWithoutExtension(_projectPath);
+		public string Name => System.IO.Path.GetFileNameWithoutExtension(_projectPath);
 
 		public ProjectTool(string path, ILogger logger)
 		{
@@ -481,6 +484,12 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			return match.Success;
 		}
 
+		private static string GetPackageNameFromHintPath(string hintPath)
+		{
+			var packageName = _packageNameFromHintPath.Match(hintPath)?.Groups["package"]?.Value;
+			return packageName;
+		}
+
 		private string GetPackagesFolderPath()
 		{
 			var packagesFolderPath = (string)null;
@@ -516,6 +525,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 				var version = nameComponents.Length > 1 ? nameComponents[1]?.RemoveFromStart(" Version=") : projectTargetVersion;
 				var isPrivate = referenceNode.Element(_msbNs + "Private")?.Value;
 				var isPackageReference = IsHintPathPackageReference(hintPath);
+				var packageName = isPackageReference ? GetPackageNameFromHintPath(hintPath) : null;
 
 				var projectReference = new ProjectReference()
 				{
@@ -525,6 +535,7 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 					Version = new ReferenceVersion(version),
 					Private = (isPrivate == "True"),
 					IsPackageReference = isPackageReference,
+					PackageName = packageName,
 					PackageVersion = isPackageReference ? new ReferenceVersion(hintPath) : null,
 				};
 
@@ -679,5 +690,485 @@ namespace Ce_Labs_ProjectToNuGetSwitcher.App
 			}
 			_didUpdateDocument = true;
 		}
+
+		public IEnumerable<ProjectReference> ScanReferences()
+		{
+			if (!_isCpsDocument)
+			{
+				return ScanClassicReferences();
+			}
+			else
+			{
+				return ScanCPSReferences();
+			}
+		}
+
+		private IEnumerable<ProjectReference> ScanClassicReferences()
+		{
+			var projectNode = _document.Element(_msbNs + "Project");
+			if (projectNode == null) throw new ApplicationException($"Invalid Project xml, could not find Project node");
+
+			var projectTargetVersion = (projectNode.Elements(_msbNs + "TargetFrameworkVersion").FirstOrDefault()?.Value ?? "v4.5.1").RemoveFromStart("v");
+
+			var itemGroupReferenceNodes = projectNode.Elements(_msbNs + "ItemGroup")
+				.SelectMany(element => element.Elements(_msbNs + "Reference"))
+				.ToArray();
+
+			var references = new List<ProjectReference>();// GetReferences().OrderBy(r => r).ToArray();
+			foreach (var referenceNode in itemGroupReferenceNodes)
+			{
+				var fullName = referenceNode.Attribute("Include")?.Value;
+				var hintPath = referenceNode.Element(_msbNs + "HintPath")?.Value;
+				var nameComponents = fullName.Split(',');
+				var name = nameComponents[0];
+				var version = nameComponents.Length > 1 ? nameComponents[1]?.RemoveFromStart(" Version=") : projectTargetVersion;
+				var isPrivate = referenceNode.Element(_msbNs + "Private")?.Value;
+				var isPackageReference = IsHintPathPackageReference(hintPath);
+				var packageName = isPackageReference ? GetPackageNameFromHintPath(hintPath) : null;
+
+				var projectReference = new ProjectReference()
+				{
+					Source = this.Name,
+					ReferenceType = isPackageReference ? ProjectReferenceType.NuGet : ( hintPath != null ? ProjectReferenceType.DLL : ProjectReferenceType.GAC),
+					Name = name,
+					FullName = fullName,
+					HintPath = hintPath,
+					Version = new ReferenceVersion(version),
+					Private = (isPrivate == "True"),
+					IsPackageReference = isPackageReference,
+					PackageName =  packageName,
+					PackageVersion = isPackageReference ? new ReferenceVersion(hintPath) : null,
+				};
+
+
+				references.Add(projectReference);
+			}			
+
+			// Sort ProjectReferences
+			var projectReferenceChildNodes = projectNode.Elements(_msbNs + "ItemGroup").Elements()
+				.Where(element => element.Name.LocalName == "ProjectReference")
+				.Select(element => new { Element = element, File = element.Attribute("Include")?.Value })
+				.Where(element => element.File != null)
+				.ToArray();
+
+			foreach (var itemGroupChildNode in projectReferenceChildNodes.OrderBy(element => element.File))
+			{
+				var fullName = itemGroupChildNode.Element.Attribute("Include")?.Value;
+				var name = System.IO.Path.GetFileNameWithoutExtension(fullName);
+				var projectReference = new ProjectReference()
+				{
+					Source = this.Name,
+					ReferenceType = ProjectReferenceType.Project,
+					Name = name,
+					FullName = fullName,
+					HintPath = null,
+					Version = null,
+					Private = false,
+					IsPackageReference = false,
+					PackageVersion = null,
+				};
+
+				references.Add(projectReference);
+			}
+
+			return references.ToArray();
+		}
+
+		private IEnumerable<ProjectReference> ScanCPSReferences()
+		{
+			var projectNode = _document.Element("Project");
+			if (projectNode == null) throw new ApplicationException($"Invalid Project xml, could not find Project node");
+
+			var projectTargetVersion = (projectNode.Elements("ProjectGroup").Elements("TargetFramework").FirstOrDefault()?.Value ?? "net461");
+
+			var itemGroupReferenceNodes = projectNode.Elements("ItemGroup").Elements("PackageReference")
+				.ToArray();
+
+			var references = new List<ProjectReference>();// GetReferences().OrderBy(r => r).ToArray();
+			foreach (var referenceNode in itemGroupReferenceNodes)
+			{
+				var fullName = referenceNode.Attribute("Include")?.Value;
+				var version = referenceNode.Attribute("Version")?.Value;
+
+				var projectReference = new ProjectReference()
+				{
+					Source = this.Name,
+					ReferenceType = ProjectReferenceType.NuGet,
+					Name = fullName,
+					FullName = fullName,
+					HintPath = null,
+					Version = new ReferenceVersion(version),
+					Private = false,
+					IsPackageReference = true,
+					PackageVersion = new ReferenceVersion(version),
+				};
+
+				references.Add(projectReference);
+			}
+
+			// Sort ProjectReferences
+			var projectReferenceChildNodes = projectNode.Elements(_msbNs + "ItemGroup").Elements()
+				.Where(element => element.Name.LocalName == "ProjectReference")
+				.Select(element => new { Element = element, File = element.Attribute("Include")?.Value })
+				.Where(element => element.File != null)
+				.ToArray();
+
+			foreach (var itemGroupChildNode in projectReferenceChildNodes.OrderBy(element => element.File))
+			{
+				var fullName = itemGroupChildNode.Element.Attribute("Include")?.Value;
+				var name = System.IO.Path.GetFileNameWithoutExtension(fullName);
+				var projectReference = new ProjectReference()
+				{
+					Source = this.Name,
+					ReferenceType = ProjectReferenceType.Project,
+					Name = name,
+					FullName = fullName,
+					HintPath = null,
+					Version = null,
+					Private = false,
+					IsPackageReference = false,
+					PackageVersion = null,
+				};
+
+				references.Add(projectReference);
+			}
+
+			return references.ToArray();
+		}
+
+		public IEnumerable<FileReference> ScanFilesInProjectFolder()
+		{
+			if (!_isCpsDocument)
+			{
+				return ScanFilesInClassicProjectFolder();
+			}
+			else
+			{
+				return ScanFilesInCPSProjectFolder();
+			}
+		}
+
+		private IEnumerable<FileReference> ScanFilesInClassicProjectFolder()
+		{
+			var projectNode = _document.Element(_msbNs + "Project");
+			if (projectNode == null) throw new ApplicationException($"Invalid Project xml, could not find Project node");
+
+			var projectTargetVersion = (projectNode.Elements(_msbNs + "TargetFrameworkVersion").FirstOrDefault()?.Value ?? "v4.5.1").RemoveFromStart("v");
+
+			var discoveredFiles = new Dictionary<string, FileReference>();
+			var filesInSubFolders = System.IO.Directory.GetFiles(this.FolderPath, "*", SearchOption.AllDirectories);
+			foreach (var fileInSubFolders in filesInSubFolders)
+			{
+				var path = fileInSubFolders;
+				var include = PathExtensions.MakeRelativePath(this.FolderPath, path);
+				var fileType = System.IO.Path.GetExtension(include);
+				
+				var isOutputFolder = include.StartsWith("bin") || include.StartsWith("obj");
+				var isTemporaryFile = fileType == ".user";
+				var isProjectFile = (fileType == ".csproj");
+
+				if (!isOutputFolder && !isProjectFile && !isTemporaryFile)
+				{
+					var fileReference = new FileReference()
+					{
+						IncludeType = "Unknown",
+						Name = include,
+						Path = path,
+						OnDisk = true,
+						InProjectFile = false,
+					};
+					discoveredFiles.Add(path.ToLowerInvariant(), fileReference);
+				}	
+			}
+
+			var itemGroupIncludeNodes = projectNode.Elements(_msbNs + "ItemGroup")
+				.SelectMany(element => element.Elements())
+				.Where(element => element.Attribute("Include")?.Value != null)
+				.Where(element => element.Name.LocalName != "Reference" && element.Name.LocalName != "ProjectReference")
+				.ToArray();
+
+			foreach (var itemGroupIncludeNode in itemGroupIncludeNodes)
+			{
+				var include = itemGroupIncludeNode.Attribute("Include")?.Value;
+				var includeType = itemGroupIncludeNode.Name.LocalName;
+
+				var isPureProjectItem = (new[] {"WCFMetadata", "Folder", "Service", "BootstrapperPackage" }).Contains(includeType);
+
+			    var itemProperties = itemGroupIncludeNode.HasElements ?
+			        itemGroupIncludeNode.Elements().ToDictionary(e => e.Name.LocalName, e => e.Value) :
+			        new Dictionary<string, string>();
+
+                if (!isPureProjectItem)
+				{
+					var path = PathExtensions.GetAbsolutePath(this.FolderPath, include);
+					var fileReference = new FileReference()
+					{
+						IncludeType = includeType,
+						Path = path,
+						Name = include,
+						InProjectFile = true,
+                        Properties = itemProperties
+					};
+
+					fileReference.OnDisk = discoveredFiles.ContainsKey(path.ToLowerInvariant());
+					discoveredFiles[path.ToLowerInvariant()] = fileReference;
+				}
+			}
+
+			return discoveredFiles.Values.ToArray();
+		}
+
+		private IEnumerable<FileReference> ScanFilesInCPSProjectFolder()
+		{
+            // Scan all default included files
+		    var discoveredFiles = new Dictionary<string, FileReference>();
+		    var filesInSubFolders = System.IO.Directory.GetFiles(this.FolderPath, "*", SearchOption.AllDirectories);
+
+		    foreach (var fileInSubFolders in filesInSubFolders)
+		    {
+		        var path = fileInSubFolders;
+		        var include = PathExtensions.MakeRelativePath(this.FolderPath, path);
+		        var fileType = System.IO.Path.GetExtension(include);
+
+		        var isOutputFolder = include.StartsWith("bin") || include.StartsWith("obj");
+		        var isTemporaryFile = fileType == ".user";
+		        var isProjectFile = (fileType == ".csproj");
+
+                var isCompileFile = (fileType == ".cs");
+		        var isNoneFile = (fileType == ".json" || fileType == ".config");
+
+                if (!isOutputFolder && !isProjectFile && !isTemporaryFile)
+		        {
+		            var fileReference = new FileReference()
+		            {
+		                IncludeType = isCompileFile ? "Compile" : isNoneFile ? "None" : "Unknown",
+		                Name = include,
+		                Path = path,
+		                OnDisk = true,
+		                InProjectFile = false,
+		            };
+		            discoveredFiles.Add(path.ToLowerInvariant(), fileReference);
+		        }
+		    }
+
+		    var projectNode = _document.Element("Project");
+		    if (projectNode == null) throw new ApplicationException($"Invalid Project xml, could not find Project node");
+
+            // Update explicitly included files
+            var itemGroupUpdateNodes = projectNode.Elements("ItemGroup")
+		        .SelectMany(element => element.Elements())
+		        .Where(element => element.Attribute("Update")?.Value != null)
+		        .Where(element => element.Name.LocalName != "Reference" && element.Name.LocalName != "ProjectReference")
+		        .ToArray();
+
+		    foreach (var itemGroupUpdateNode in itemGroupUpdateNodes)
+		    {
+		        var updateName = itemGroupUpdateNode.Attribute("Update")?.Value;
+		        var updateType = itemGroupUpdateNode.Name.LocalName;
+
+		        var isPureProjectItem = (new[] { "WCFMetadata", "Folder", "Service", "BootstrapperPackage" }).Contains(updateType);
+
+		        var itemProperties = itemGroupUpdateNode.HasElements ? 
+                    itemGroupUpdateNode.Elements().ToDictionary(e => e.Name.LocalName, e => e.Value) : 
+                    new Dictionary<string, string>();
+
+                if (!isPureProjectItem)
+		        {
+		            var path = PathExtensions.GetAbsolutePath(this.FolderPath, updateName);
+		            var fileReference = new FileReference()
+		            {
+		                IncludeType = updateType,
+		                Path = path,
+		                Name = updateName,
+		                InProjectFile = true,
+		                OnDisk = true,
+                        Properties = itemProperties,
+                    };
+
+		            fileReference.OnDisk = discoveredFiles.ContainsKey(path.ToLowerInvariant());
+		            discoveredFiles[path.ToLowerInvariant()] = fileReference;
+		        }
+		    }
+
+            // Remove excluded files
+		    var itemGroupRemoveNodes = projectNode.Elements("ItemGroup")
+		        .SelectMany(element => element.Elements())
+		        .Where(element => element.Attribute("Remove")?.Value != null)
+		        .Where(element => element.Name.LocalName != "Reference" && element.Name.LocalName != "ProjectReference")
+		        .ToArray();
+
+		    foreach (var itemGroupRemoveNode in itemGroupRemoveNodes)
+		    {
+		        var removeName = itemGroupRemoveNode.Attribute("Remove")?.Value;
+		        var removeType = itemGroupRemoveNode.Name.LocalName;
+
+		        var isPureProjectItem = (new[] { "WCFMetadata", "Folder", "Service", "BootstrapperPackage" }).Contains(removeType);
+
+		        if (!isPureProjectItem)
+		        {
+		            var path = PathExtensions.GetAbsolutePath(this.FolderPath, removeName);
+		            var fileReference = new FileReference()
+		            {
+		                IncludeType = "Remove",
+		                Path = path,
+		                Name = removeName,
+		                InProjectFile = true,
+                        OnDisk = true,
+		            };
+
+		            fileReference.OnDisk = discoveredFiles.ContainsKey(path.ToLowerInvariant());
+		            discoveredFiles[path.ToLowerInvariant()] = fileReference;
+		        }
+		    }
+
+            return discoveredFiles.Values;
+		}
+
+	    public IDictionary<string, string> GetProjectProperties(string configuration, string platform)
+	    {
+	        if (!_isCpsDocument)
+	        {
+	            return GetClassicProjectProperties(configuration, platform);
+	        }
+	        else
+	        {
+	            return GetCPSProjectProperties(configuration, platform);
+	        }
+        }
+
+	    private bool CheckCondition(string conditionExpression, IDictionary<string, string> variables)
+	    {
+	        if (conditionExpression == null) return true;
+	        try
+	        {
+	            var projectConditionMatchEvaluator = new ProjectConditionMatchEvaluator(variables);
+	            var replacedExpression = _replaceProjectVarablesInCondition.Replace(conditionExpression,
+	                new MatchEvaluator(projectConditionMatchEvaluator.Evaluate));
+
+	            var expressionLeftRight = _parseProjectCondition.Match(replacedExpression);
+	            var left = expressionLeftRight.Groups["left"].Value;
+	            var op = expressionLeftRight.Groups["operator"].Value;
+	            var right = expressionLeftRight.Groups["right"].Value;
+
+	            if (op == "==")
+	            {
+	                return left.Equals(right);
+	            }
+	            if (op == "!=")
+	            {
+	                return !left.Equals(right);
+	            }
+	        }
+            catch (Exception) { }
+
+            return false;
+	    }
+
+	    private class ProjectConditionMatchEvaluator
+	    {
+	        private readonly IDictionary<string, string> _variables;
+
+	        public ProjectConditionMatchEvaluator(IDictionary<string, string> variables)
+	        {
+	            _variables = variables;
+	        }
+
+	        public string Evaluate(Match match)
+	        {
+	            if (match.Groups["varable"].Success)
+	            {
+	                var variableName = match.Groups["varable"].Value;
+	                if (_variables.ContainsKey(variableName))
+	                {
+	                    return _variables[variableName];
+	                }
+	            }
+	            return match.Value;
+	        }
+	    }
+
+	    private IDictionary<string, string> GetClassicProjectProperties(string configuration, string platform)
+	    {
+	        var projectNode = _document.Element(_msbNs + "Project");
+	        if (projectNode == null) throw new ApplicationException($"Invalid Project xml, could not find Project node");
+
+	        var variables = new Dictionary<string, string>() { { "Configuration", configuration }, { "Platform", platform } };
+	        var properties =  projectNode.Elements(_msbNs + "PropertyGroup")
+	            .Where(element => CheckCondition(element.Attribute("Condition")?.Value, variables))
+	            .Elements()
+	            .ToDictionary(e => e.Name.LocalName, e => e.Value);
+
+            return properties;
+	    }
+
+        private IDictionary<string, string> GetCPSProjectProperties(string configuration, string platform)
+	    {
+	        var projectNode = _document.Element("Project");
+	        if (projectNode == null) throw new ApplicationException($"Invalid Project xml, could not find Project node");
+
+	        var variables = new Dictionary<string, string>() { { "Configuration", configuration }, { "Platform", platform } };
+	        var properties = projectNode.Elements("PropertyGroup")
+	            .Where(element => CheckCondition(element.Attribute("Condition")?.Value, variables))
+	            .Elements()
+	            .ToDictionary(e => e.Name.LocalName, e => e.Value);
+
+            // Add implicit properties
+	        if (!properties.ContainsKey("AssemblyName"))
+	        {
+	            properties.Add("AssemblyName", Name);   
+	        }
+
+	        return properties;
+	    }
+
+
+        private void ConvertClassicToCPSProject()
+		{
+			var projectNode = _document.Element(_msbNs + "Project");
+			if (projectNode == null) throw new ApplicationException($"Invalid Project xml, could not find Project node");
+
+			var projectTargetVersion = (projectNode.Elements(_msbNs + "TargetFrameworkVersion").FirstOrDefault()?.Value ?? "v4.5.1").RemoveFromStart("v");
+
+			var itemGroupReferenceNodes = projectNode.Elements(_msbNs + "ItemGroup")
+				.SelectMany(element => element.Elements(_msbNs + "Reference"))
+				.ToArray();
+
+			var references = new List<ProjectReference>();// GetReferences().OrderBy(r => r).ToArray();
+			foreach (var referenceNode in itemGroupReferenceNodes)
+			{
+				var fullName = referenceNode.Attribute("Include")?.Value;
+				var hintPath = referenceNode.Element(_msbNs + "HintPath")?.Value;
+				var nameComponents = fullName.Split(',');
+				var name = nameComponents[0];
+				var version = nameComponents.Length > 1 ? nameComponents[1]?.RemoveFromStart(" Version=") : projectTargetVersion;
+				var isPrivate = referenceNode.Element(_msbNs + "Private")?.Value;
+				var isPackageReference = IsHintPathPackageReference(hintPath);
+				var packageName = isPackageReference ? GetPackageNameFromHintPath(hintPath) : null;
+
+				var projectReference = new ProjectReference()
+				{
+					Source = this.Name,
+					ReferenceType = isPackageReference ? ProjectReferenceType.NuGet : (hintPath != null ? ProjectReferenceType.DLL : ProjectReferenceType.GAC),
+					Name = name,
+					FullName = fullName,
+					HintPath = hintPath,
+					Version = new ReferenceVersion(version),
+					Private = (isPrivate == "True"),
+					IsPackageReference = isPackageReference,
+					PackageName = packageName,
+					PackageVersion = isPackageReference ? new ReferenceVersion(hintPath) : null,
+				};
+
+
+				references.Add(projectReference);
+			}
+
+
+
+
+
+		}
+
+
 	}
 }

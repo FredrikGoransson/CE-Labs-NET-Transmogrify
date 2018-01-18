@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Ce_Labs_ProjectToNuGetSwitcher.App
+namespace Ce.Labs.BuildTools
 {
 	public class Nuspec
 	{

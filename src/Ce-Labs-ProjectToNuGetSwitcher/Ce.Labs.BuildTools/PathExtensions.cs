@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace Ce_Labs_ProjectToNuGetSwitcher.App
+namespace Ce.Labs.BuildTools
 {
 	public static class PathExtensions
 	{

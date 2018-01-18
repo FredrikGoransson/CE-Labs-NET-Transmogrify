@@ -16,3 +16,5 @@ C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\C
 C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.csproj.CoreCompileInputs.cache
 C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.exe
 C:\code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\obj\Debug\Ce-Labs-ProjectToNuGetSwitcher.App.pdb
+C:\Code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\Ce.Labs.BuildTools.dll
+C:\Code\CodeEffect\CE-Labs-NET-Transmogrify\src\Ce-Labs-ProjectToNuGetSwitcher\Ce-Labs-ProjectToNuGetSwitcher.App\bin\Debug\Ce.Labs.BuildTools.pdb

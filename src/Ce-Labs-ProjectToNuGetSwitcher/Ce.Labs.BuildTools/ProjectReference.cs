@@ -1,16 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
-namespace Ce_Labs_ProjectToNuGetSwitcher.App
+namespace Ce.Labs.BuildTools
 {
+	public enum ProjectReferenceType
+	{
+		GAC,
+		DLL,
+		NuGet,
+		Project
+	}
+
 	public class ProjectReference : IComparable
 	{
-
+		public string Source { get; set; }
+		public ProjectReferenceType ReferenceType { get; set; }
 		public string Name { get; set; }
 		public string FullName { get; set; }
 		public string HintPath { get; set; }
 		public ReferenceVersion Version { get; set; }
+		public string PackageName { get; set; }
 		public ReferenceVersion PackageVersion { get; set; }
 		public bool Private { get; set; }
 		public bool IsPackageReference { get; set; }
