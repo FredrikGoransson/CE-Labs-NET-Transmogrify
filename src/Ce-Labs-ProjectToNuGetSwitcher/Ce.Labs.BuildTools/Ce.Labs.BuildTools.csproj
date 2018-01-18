@@ -9,6 +9,12 @@
 		<Authors>Code Effect</Authors>
 		<Product>CE Labs</Product>
 		<Description>Tooling for working with Visual Studio solutions and .NET projects</Description>
+		<AssemblyVersion>1.1.1.0</AssemblyVersion>
+		<FileVersion>1.1.1.0</FileVersion>
+		<Version>1.1.1</Version>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <PlatformTarget>AnyCPU</PlatformTarget>
 	</PropertyGroup>
 	<ItemGroup>
 	  <Reference Include="System.IO.Compression" />

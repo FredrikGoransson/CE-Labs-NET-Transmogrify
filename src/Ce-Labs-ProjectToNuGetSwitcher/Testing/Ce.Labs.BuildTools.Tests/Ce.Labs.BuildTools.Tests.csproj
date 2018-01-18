@@ -15,7 +15,8 @@
 	  <PackageReference Include="NUnit" Version="3.9.0" />
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\Ce-Labs-ProjectToNuGetSwitcher.App\Ce-Labs-ProjectToNuGetSwitcher.App.csproj" />
-	  <ProjectReference Include="..\Ce.Labs.BuildTools\Ce.Labs.BuildTools.csproj" />
+	  <ProjectReference Include="..\..\Ce.Labs.BuildTools\Ce.Labs.BuildTools.csproj" />
+	  <ProjectReference Include="..\Ce.Labs.Samples.ClassicProject\Ce.Labs.Samples.ClassicProject.csproj" />
+	  <ProjectReference Include="..\Ce.Labs.Samples.CPSProject\Ce.Labs.Samples.CPSProject.csproj" />
 	</ItemGroup>
 </Project>
